@@ -114,13 +114,13 @@ describe( "binding", function() {
                     }
                 });
             
-            expect( o.foo ).toBe( "bar" );
+            expect( o.get( "foo" ) ).toBe( "bar" );
             
             Binding.bind( o, "foo", function( value ) {
                 called = value;
             });
             
-            o.foo = "baz";
+            o.set( "foo", "baz" );
             expect( called ).toBe( "baz" );
             called = null;
             
@@ -128,7 +128,7 @@ describe( "binding", function() {
                 called = value;
             });
             
-            o.zzz.aaa = "ccc";
+            o.get( "zzz" ).set( "aaa", "ccc" );
             expect( called ).toBe( "ccc" );
         });
     });

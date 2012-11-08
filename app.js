@@ -26,7 +26,7 @@ app.configure(function() {
     app.use(express.static(path.join(__dirname, 'lib')));
 });
 
-var modelSync       = require('./lib/modelsync').listen(server, sessionStore);
+var modelSync = require('./lib/modelsync').listen(server, sessionStore);
 
 app.configure('development', function() {
     app.use(express.errorHandler());

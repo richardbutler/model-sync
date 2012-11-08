@@ -1,6 +1,7 @@
 describe( "memory store", function() {
     
-    var MemoryStore = require( "../lib/store/memory" );
+    var MemoryStore = require( "../lib/store/memory" ),
+        Binding = require( "../lib/util/binding" );
     
     beforeEach( function() {
         MemoryStore.store = {
@@ -23,6 +24,12 @@ describe( "memory store", function() {
     });
     
     it( "should read a value from the store", function() {
+        expect( MemoryStore._readSync( "/path/to/foo" ) ).toBe( "bar" );
+        expect( MemoryStore._readSync( "/path/another" ) ).toBe( "thing" );
+        expect( MemoryStore._readSync( "/path/doesnt/exist" ) ).toBe( null );
+        
+        MemoryStore.store = Binding.createObject( MemoryStore.store );
+        
         expect( MemoryStore._readSync( "/path/to/foo" ) ).toBe( "bar" );
         expect( MemoryStore._readSync( "/path/another" ) ).toBe( "thing" );
         expect( MemoryStore._readSync( "/path/doesnt/exist" ) ).toBe( null );
