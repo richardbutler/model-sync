@@ -277,6 +277,7 @@
      * @doc
      */
     proto.trigger = proto.emitEvent;
+    proto.emit = proto.emitEvent;
 
     // Expose the class either via AMD or the global object
     if(typeof define === 'function' && define.amd) {

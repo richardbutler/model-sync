@@ -29,16 +29,37 @@ describe( "memory store", function() {
     });
     
     it( "should patch values onto an existing object", function() {
-        var o1 = { thing: "stuff" },
+        var o1 = { thing: "stuff", thing2: "thing2" },
             o2 = MemoryStore._patch( o1, "/one/two", "three" );
         
         expect( o2.one ).toEqual( jasmine.any( Object ) );
         expect( o2.one.two ).toBe( "three" );
+        expect( o1.thing2 ).toBe( "thing2" );
         
         o2 = MemoryStore._patch( o1, "/thing", { something: "else" } );
         
         expect( o2.thing ).toEqual( jasmine.any( Object ) );
         expect( o2.thing.something ).toBe( "else" );
+        expect( o2.thing2 ).toBe( "thing2" );
+    });
+    
+    it( "should patch values onto an existing object 2", function() {
+        var o1 = {
+                one: {
+                    two: "two",
+                    three: {
+                        five: "five"
+                    },
+                    four: "four"
+                }
+            },
+            o2 = { six: "six" };
+        
+        MemoryStore._patch( o1, "/one/four", o2 );
+        
+        expect( o1.one.two ).toBe( "two" );
+        expect( o1.one.three.five ).toBe( "five" );
+        expect( o1.one.four.six ).toBe( "six" );
     });
     
     it( "should overwrite values on an existing object", function( done ) {

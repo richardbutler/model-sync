@@ -107,8 +107,11 @@ describe( "binding", function() {
     describe( "createObject", function() {
         it( "should create a bindable object", function() {
             var called,
-                o = Binding.createObject( {}, {
-                    foo: "bar"
+                o = Binding.createObject({
+                    foo: "bar",
+                    zzz: {
+                        aaa: "bbb"
+                    }
                 });
             
             expect( o.foo ).toBe( "bar" );
@@ -119,6 +122,14 @@ describe( "binding", function() {
             
             o.foo = "baz";
             expect( called ).toBe( "baz" );
+            called = null;
+            
+            Binding.bindString( o, "zzz.aaa", function( value ) {
+                called = value;
+            });
+            
+            o.zzz.aaa = "ccc";
+            expect( called ).toBe( "ccc" );
         });
     });
     
