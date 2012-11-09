@@ -77,7 +77,6 @@ describe( "memory store", function() {
     });
     
     it( "should read several paths into an object", function( done ) {
-        
         MemoryStore.read([
             "/path/to/foo",
             "/path/stuff",
@@ -94,6 +93,15 @@ describe( "memory store", function() {
             
             done();
         });
+    });
+    
+    it( "should never overwrite the store with a new object", function() {
+        var s = MemoryStore.store = Binding.createObject( MemoryStore.store );
+        
+        MemoryStore.save( "/", Binding.createObject( { foo: "bar" } ) );
+        
+        expect( MemoryStore.store ).toBe( s );
+        expect( MemoryStore.store.get( "foo" ) ).toBe( "bar" );
     });
     
 });

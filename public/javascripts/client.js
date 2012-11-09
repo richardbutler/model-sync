@@ -1,15 +1,10 @@
 (function() {
-    var store   = MemoryStore,
-        socket  = io.connect(),
+    var socket  = io.connect(),
         g       = document.getElementById( "global" );
     
-    store.store = {};
-    store.processor = function( data ) {
-        return Binding.createObject( data );
-    };
-    store.listen( socket );
+    var store = MemoryStore.store;
     
-    console.log( "Store", store.store );
+    ModelSync.listen( socket );
     
     document.getElementById( "clicker" ).onclick = function() {
         function callback( err ) {
@@ -17,7 +12,7 @@
                 return console.log( "Error:", err );
             }
             
-            console.log( "Save successful", store.store );
+            console.log( "Save successful", ModelSync.store.store );
         }
         
         socket.emit( "save", "/test/path1/foo", { thing: "stuff" }, callback );
@@ -28,6 +23,9 @@
         g.innerHTML += e.path + ": " + e.data[ Object.keys( e.data )[ 0 ] ] + "<br>";
     });*/
    
-   Binding.bindString( store.store, "test.path1.foo.thing", g, "innerHTML" );
+    ModelSync.bind( "test.path1.foo.thing", g, "innerHTML" );
+    ModelSync.bind( "test.path1.foo.thing", function( value ) {
+        console.log( "value updated", value );
+    });
     
 })();

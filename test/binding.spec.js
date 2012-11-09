@@ -130,6 +130,9 @@ describe( "binding", function() {
             
             o.get( "zzz" ).set( "aaa", "ccc" );
             expect( called ).toBe( "ccc" );
+            
+            o.set( "zzz", "ddd" );
+            expect( o.get( "zzz" ) ).toBe( "ddd" );
         });
     });
     
