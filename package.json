@@ -1,9 +1,13 @@
 {
-	"name": "model-sync",
+	"name": "modelsync",
 	"version": "0.0.1",
-	"private": true,
+	"author": {
+		"name": "Richard Butler",
+		"email": "rich@aspectvision.com"
+	},
 	"scripts": {
-		"start": "node app"
+		"start": "node app",
+		"test": "jasmine-node test"
 	},
 	"dependencies": {
 		"express": "3.0.1",

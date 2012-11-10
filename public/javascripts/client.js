@@ -2,8 +2,6 @@
     var socket  = io.connect(),
         g       = document.getElementById( "global" );
     
-    var store = MemoryStore.store;
-    
     ModelSync.listen( socket );
     
     document.getElementById( "clicker" ).onclick = function() {
