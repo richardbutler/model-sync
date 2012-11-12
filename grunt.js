@@ -12,8 +12,8 @@ module.exports = function ( grunt ) {
                 ' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */'
         },
         opt: {
-            prefix: 'var ModelSync = (function() {',
-            suffix: 'return ModelSync; })()'
+            prefix: 'var ModelSync = (function( _, EventEmitter ) {',
+            suffix: 'return ModelSync; })( window._, window.EventEmitter )'
         },
         concat: {
             dist: {
