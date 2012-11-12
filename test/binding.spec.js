@@ -36,7 +36,7 @@ describe( "binding", function() {
         });
         
         it( "should bind a function", function() {
-            var called;
+            var called,
                 callback = function( value ) {
                     called = value;
                 };
@@ -61,6 +61,28 @@ describe( "binding", function() {
             source.prop = "one";
             
             expect( called ).toBe( "one" );
+        });
+        
+        it( "should one-time bind a non-bindable property", function() {
+            var o = {
+                    thing: "test",
+                    thing2: {
+                        one: "two"
+                    }
+                },
+                o1 = {};
+            
+            Binding.bind( o, "thing", o1, "thing_" );
+            expect( o1.thing_ ).toBe( "test" );
+            
+            Binding.bindString( o, "thing2.one", o1, "two_" );
+            expect( o1.two_ ).toBe( "two" );
+            
+            o.thing2 = Binding.createObject( o.thing2 );
+            Binding.bindString( o, "thing2.one", o1, "three_" );
+            expect( o1.three_ ).toBe( "two" );
+            o.thing2.set( "one", "four" );
+            expect( o1.three_ ).toBe( "four" );
         });
     });
     

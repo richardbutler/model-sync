@@ -21,6 +21,7 @@ module.exports = function ( grunt ) {
                     '<banner:meta.banner>',
                     '<banner:opt.prefix>',
                     'lib/util/binding.js',
+                    'lib/util/view.js',
                     'lib/store/memory.js',
                     'lib/modelsync-client.js',
                     '<banner:opt.suffix>'
@@ -33,10 +34,17 @@ module.exports = function ( grunt ) {
                 src: ['<banner:meta.banner>', '<config:concat.dist.dest>'],
                 dest: 'public/javascripts/modelsync-client.min.js'
             }
+        },
+        watch: {
+            dev: {
+                files: [ 'lib/**/*', 'public/javascripts/**/*' ],
+                tasks: "dev"
+            }
         }
     } );
 
     // Default task.
     grunt.registerTask( 'default', 'concat min' );
+    grunt.registerTask( 'dev', 'concat watch' );
 
 };

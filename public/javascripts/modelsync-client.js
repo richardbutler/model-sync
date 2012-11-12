@@ -61,15 +61,23 @@ var Binding = (function( EventEmitter ) {
     }
     
     function isBindable( o ) {
-        return o.__proto__ === Bindable || o.prototype === Bindable;
+        return o && ( o.__proto__ === Bindable || o.prototype === Bindable );
     }
     
     function getPropertyValue( o, key ) {
-        if ( isBindable( o ) ) {
-            return o.get( key );
+        var value;
+        
+        if ( !o ) {
+            return null;
         }
-    
-        return o[ key ];
+        
+        if ( isBindable( o ) ) {
+            value = o.get( key );
+        } else {
+            value = o[ key ];
+        }
+        
+        return typeof value === "function" ? value() : value;
     }
     
     function serialise( data ) {
@@ -86,6 +94,12 @@ var Binding = (function( EventEmitter ) {
         }
     
         return data;
+    }
+    
+    function warn() {
+        if ( Binding.warn ) {
+            console.log( Array.prototype.join.call( arguments, " " ) );
+        }
     }
     
     /**
@@ -131,6 +145,7 @@ var Binding = (function( EventEmitter ) {
     
         Bindable: Bindable,
         isBindable: isBindable,
+        warn: true,
     
         /**
          * Binds a source property to a destination property.
@@ -156,7 +171,12 @@ var Binding = (function( EventEmitter ) {
             callback = callbackFor( destination, destinationProperty );
     
             if ( callback !== undefined ) {
-                source.on( event, callback );
+                if ( typeof source.on !== "undefined" ) {
+                    source.on( event, callback );
+                } else {
+                    warn( "WARN: One-time binding only for '" + sourceProperty + "' as source is not a bindable object (EventEmitter)." );
+                }
+                
                 callback( source[ sourceProperty ] );
             }
         },
@@ -193,11 +213,17 @@ var Binding = (function( EventEmitter ) {
                         for ( i = 0; i < chain.length; i++ ) {
                             o = chain[ i ];
                             oProp = chainArr[ i ];
-                            o.on( "change:" + oProp, changed );
+                            
+                            if ( o && typeof o.on !== "undefined" ) {
+                                o.on( "change:" + oProp, function( value ) {
+                                    changed( value, o, oProp );
+                                });
+                            }
                         }
     
                         value = getPropertyValue( o, oProp );
                     } catch( e ) {
+                        warn( "WARN: Swallowed exception for", chainString + ":", String( e ) );
                         value = null;
                     }
     
@@ -205,12 +231,14 @@ var Binding = (function( EventEmitter ) {
                 }
             }
     
-            function changed( value ) {
+            function changed( value, o, oProp ) {
+                console.log( "changed", value, o, oProp );
+                
                 for ( i = 0; i < chain.length; i++ ) {
                     o = chain[ i ];
                     oProp = chainArr[ i ];
     
-                    if ( o ) {
+                    if ( o && typeof o.removeListener !== "undefined" ) {
                         o.removeListener( "change:" + oProp, changed );
                     }
                 }
@@ -258,6 +286,117 @@ var Binding = (function( EventEmitter ) {
 })(
     typeof window === "undefined" ? require( "events" ).EventEmitter : EventEmitter
 );
+
+var View = (function() {
+    
+    var selector,
+        viewIdAttr,
+        attrPrefix;
+        
+    // TODO: Auto-add views when added to the DOM; i.e. listen for creation
+    // events. JCade?
+    
+    var View = {
+        
+        /**
+         * Perform a blanket setup based on view options.
+         * 
+         * Expects:
+         * 
+         *      View.setup({
+         *          selector: ".view",          // Blanket selector for DOM views
+         *          idAttribute: "id",          // For view IDs
+         *          attributePrefix: "data-"    // For events
+         *      });
+         * 
+         * @param {Object} options
+         */
+        setup: function( options ) {
+            selector    = options.selector          || ".view";
+            viewIdAttr  = options.idAttribute       || "id";
+            attrPrefix  = options.attributePrefix   || "data-";
+            
+            $( selector ).each( function() {
+                View.setupView( this );
+            });
+        },
+        
+        /**
+         * Sets up a single view. Expects a DOM element or jQuery object.
+         * 
+         * @param {Object} view
+         */
+        setupView: function( view ) {
+            var $view = $( view ),
+                id, viewScope;
+            
+            if ( !$view.length ) {
+                return;
+            }
+            
+            id = $view.attr( viewIdAttr );
+            viewScope = ModelSync.viewScopes[ id ];
+            
+            // Allow a closure or vanilla object for view scopes. If it's a
+            // function, pass the view and the node into it.
+            function viewScopeFor( node ) {
+                return typeof viewScope === "function" ?
+                    viewScope( view, node ) : viewScope;
+            }
+            
+            function initNode( node ) {
+                var name = node.nodeName,
+                    value = String( node.textContent ).trim(),
+                    scope;
+                
+                // Data binding attribute
+                if ( value.charAt( 0 ) === "{" ) {
+                    
+                    value = value.substring( 1, value.length - 1 ).trim();
+                    scope = viewScopeFor( node );
+                    
+                    if ( value.substr( 0, 5 ) === "this." ) {
+                        console.log( "bind", value.substr( 5 ), "to", node, "within", scope );
+                        
+                        ModelSync.Binding.bindString( scope, value.substr( 5 ), node, "textContent" );
+                    } else {
+                        ModelSync.bind( value, node, "textContent" );
+                    }
+                    
+                // Attribute with UI event(s).
+                } else if ( name.indexOf( attrPrefix ) === 0 ) {
+                    
+                    if ( !viewScope ) {
+                        console.log( "WARN: Could not bind " + name + " as there is no " + id + " view scope." );
+                        return;
+                    }
+                    
+                    name = name.replace( attrPrefix, "" );
+                    value = new Function( value );
+                    scope = viewScopeFor( node.ownerElement );
+                    
+                    $( node.ownerElement ).bind( name, function() {
+                        value.apply( scope );
+                    });
+                    
+                }
+                
+                if ( node.attributes ) {
+                    Array.prototype.slice.apply( node.attributes ).forEach( initNode );
+                }
+            }
+            
+            $view.children().each( function() {
+                initNode( this );
+            });
+        }
+        
+    };
+    
+    return View;
+
+})();
+
 var MemoryStore = (function( _, EventEmitter, Binding ) {
 
     /**
@@ -321,12 +460,14 @@ var MemoryStore = (function( _, EventEmitter, Binding ) {
             data = o.attributes;
         }
     
-        keys = objectKeys( data );
-    
-        for ( i = 0; i < keys.length; i++ ) {
-            key = keys[ i ];
-    
-            delete data[ key ];
+        if ( data ) {
+            keys = objectKeys( data );
+        
+            for ( i = 0; i < keys.length; i++ ) {
+                key = keys[ i ];
+        
+                delete data[ key ];
+            }
         }
     }
     
@@ -608,6 +749,16 @@ var ModelSync = {
 
     Binding: Binding,
     MemoryStore: MemoryStore,
+    View: View,
+    
+    /**
+     * Default view options (passed to View.setup).
+     */
+    viewOptions: {
+        selector: ".view",
+        idAttribute: "id",
+        attributePrefix: "data-"
+    },
 
     /**
      * Initial storage for the store.
@@ -623,16 +774,20 @@ var ModelSync = {
      *
      * @param {Socket}  socket
      */
-    listen: function( socket ) {
+    listen: function( options ) {
         var self = this;
+        
+        _.extend( this, options );
 
-        socket.on( "state", function( data ) {
+        this.socket.on( "state", function( data ) {
             self.store.save( "/", data );
         });
 
-        socket.on( "save", function( path, data ) {
+        this.socket.on( "save", function( path, data ) {
             self.store.save( path, data );
         });
+        
+        this.View.setup( this.viewOptions );
     },
 
     /**
