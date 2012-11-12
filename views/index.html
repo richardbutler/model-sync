@@ -1,6 +1,6 @@
 <!DOCTYPE HTML>
 <html>
-  <head>
+<head>
     <title>Thing</title>
     <script src="/javascripts/jquery-1.7.1.min.js"></script>
     <script src="/javascripts/underscore.js"></script>
@@ -9,16 +9,19 @@
     <!--<script src="/util/binding.js"></script>
     <script src="/store/memory.js"></script>
     <script src="/modelsync-client.js"></script>-->
-  </head>
-  <body>
+</head>
+<body>
     <div id="main-view" class="view">
-      <div class="label" data-wotsit="{ test.path1.foo.thing }">{ test.path1.foo.thing }</div>
-      <div>{ this.vars.testData.test }</div>
-      <div>{ this.vars.testFunc }</div>
-      <button data-click="this.emit()">Emit</button>
+        <div class="label" data-wotsit="{ test.path1.foo.thing }">{
+            test.path1.foo.thing }
+        </div>
+        <div>{ this.vars.testData.test }</div>
+        <div>{ this.vars.testFunc }</div>
+
+        <button data-click="this.emit()">Emit</button>
     </div>
 
     <script src="/javascripts/modelsync-client.js"></script>
     <script src="/javascripts/client.js"></script>
-  </body>
+</body>
 </html>
