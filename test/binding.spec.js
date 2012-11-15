@@ -158,4 +158,54 @@ describe( "binding", function() {
         });
     });
     
+    describe( "BindableArray", function() {
+        var arr;
+        
+        beforeEach( function() {
+            arr = Binding.createObject( [ 1, 2, 3, 4 ] );
+        });
+        
+        it( "should push", function() {
+            var called = false;
+            
+            arr.on( "add", function( items, index ) {
+                called = true;
+                
+                expect( items ).toEqual( [ 5, 6 ] );
+                expect( index ).toBe( 4 );
+            });
+            
+            arr.push( 5, 6 );
+            
+            expect( called ).toBe( true );
+        });
+        
+        it( "should pop", function() {
+            var called = false;
+            
+            arr.on( "remove", function( item ) {
+                called = true;
+            });
+            
+            arr.pop();
+            
+            expect( called ).toBe( true );
+        });
+        
+        it( "should shift", function() {
+            var called = false;
+            
+            arr.on( "remove", function( item, index ) {
+                called = true;
+                
+                expect( item ).toBe( 1 );
+                expect( index ).toBe( 0 );
+            });
+            
+            arr.shift();
+            
+            expect( called ).toBe( true );
+        });
+    });
+    
 });
