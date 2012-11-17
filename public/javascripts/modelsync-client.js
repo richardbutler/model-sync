@@ -1,4 +1,4 @@
-/*! modelsync - v0.0.1 - 2012-11-12
+/*! modelsync - v0.0.1 - 2012-11-14
 * Copyright (c) 2012 Richard Butler; Licensed  */
 
 var ModelSync = (function( _, EventEmitter ) {
@@ -299,9 +299,118 @@ var View = (function() {
     // TODO: Auto-add views when added to the DOM; i.e. listen for creation
     // events. JCade?
 
+    function binding( viewScope ) {
+        return function bind( value, node ) {
+            var args = [ node ];
+
+            if ( typeof node !== "function" ) {
+                args.push( "textContent" );
+            }
+
+            if ( value.substr( 0, 5 ) === "this." ) {
+                ModelSync.Binding.bindString.apply(
+                    ModelSync.Binding,
+                    [ viewScope, value.substr( 5 ) ].concat( args ) );
+            } else {
+                ModelSync.bind.apply(
+                    ModelSync,
+                    [ value ].concat( args ) );
+            }
+        };
+    }
+
+    function initScope( viewScope ) {
+
+        return function initNode( node ) {
+
+            var name = node.nodeName,
+                bind = binding( viewScope ),
+                value = String( node.textContent ).trim(),
+                isNode = node.nodeType === 1,
+                $node = $( node ),
+                $children = isNode ? $node.children() : null,
+                hasPrefix = name.indexOf( attrPrefix ) === 0,
+                handler;
+
+            if ( hasPrefix ) {
+                name = name.replace( attrPrefix, "" );
+            }
+
+            // Data binding attribute
+            if ( value.charAt( 0 ) === "{" && ( !node.children || node.children.length === 0 ) ) {
+
+                // Strip braces.
+                value = value.substring( 1, value.length - 1 ).trim();
+
+                if ( hasPrefix && name && View.handlers.hasOwnProperty( name ) ) {
+                    handler = View.handlers[ name ];
+                    handler.call( this, {
+                        name: name,
+                        node: node,
+                        value: value,
+                        viewScope: viewScope,
+                        initNode: initNode,
+                        bind: bind
+                    });
+                } else {
+                    bind( value, node );
+                }
+
+                // Attribute with UI event(s).
+            } else if ( !isNode && hasPrefix ) {
+
+                if ( !viewScope ) {
+                    console.log( "WARN: Could not bind " + name + " as there is no view scope supplied." );
+                    return;
+                }
+
+                value = new Function( value );
+
+                $( node.ownerElement ).bind( name, function() {
+                    value.apply( viewScope );
+                });
+
+            }
+
+            if ( isNode ) {
+                if ( node.attributes ) {
+                    Array.prototype.slice.apply( node.attributes ).forEach( initNode );
+                }
+
+                if ( $children ) {
+                    $children.each( function() {
+                        initNode( this );
+                    });
+                }
+            }
+        };
+    }
+
     var View = {
 
         idTable: {},
+
+        handlers: {
+            each: function( options ) {
+                var owner = options.node.ownerElement,
+                    parent = owner.parentNode,
+                    tmpl = $( owner ).html();
+
+                options.bind( options.value, function( value ) {
+                    $( parent ).empty();
+
+                    if ( value ) {
+                        value.forEach( function( item ) {
+                            var el = $( tmpl ).get( 0 );
+
+                            options.initNode( el, options.viewScope );
+
+                            $( parent ).append( el );
+                        });
+                    }
+                });
+            }
+        },
 
         /**
          * Perform a blanket setup based on view options.
@@ -333,7 +442,7 @@ var View = (function() {
          */
         setupView: function( view ) {
             var $view = $( view ),
-                id, viewScope;
+                id, viewScope, initNode;
 
             if ( !$view.length ) {
                 return;
@@ -348,46 +457,8 @@ var View = (function() {
 
             this.idTable[ id ] = viewScope;
 
-            function initNode( node ) {
-                var name = node.nodeName,
-                    value = String( node.textContent ).trim();
-
-                // Data binding attribute
-                if ( value.charAt( 0 ) === "{" ) {
-
-                    value = value.substring( 1, value.length - 1 ).trim();
-
-                    if ( value.substr( 0, 5 ) === "this." ) {
-                        ModelSync.Binding.bindString( viewScope, value.substr( 5 ), node, "textContent" );
-                    } else {
-                        ModelSync.bind( value, node, "textContent" );
-                    }
-
-                    // Attribute with UI event(s).
-                } else if ( name.indexOf( attrPrefix ) === 0 ) {
-
-                    if ( !viewScope ) {
-                        console.log( "WARN: Could not bind " + name + " as there is no " + id + " view scope." );
-                        return;
-                    }
-
-                    name = name.replace( attrPrefix, "" );
-                    value = new Function( value );
-
-                    $( node.ownerElement ).bind( name, function() {
-                        value.apply( viewScope );
-                    });
-
-                }
-
-                if ( node.attributes ) {
-                    Array.prototype.slice.apply( node.attributes ).forEach( initNode );
-                }
-            }
-
-            $view.children().each( function() {
-                initNode( this );
-            });
+            initNode = initScope( viewScope );
+            initNode( view );
         },
 
         /**

@@ -12,11 +12,17 @@
 </head>
 <body>
     <div id="main-view" class="view">
-        <div class="label" data-wotsit="{ test.path1.foo.thing }">{
-            test.path1.foo.thing }
+        <div class="label" data-wotsit="{ test.path1.foo.thing }">
+            { test.path1.foo.thing }
         </div>
         <div>{ this.vars.testData.test }</div>
         <div>{ this.vars.testFunc }</div>
+
+        <ul>
+            <li data-each="{ test.path1.items }">
+                <p>{ this }</p>
+            </li>
+        </ul>
 
         <button data-click="this.emit()">Emit</button>
     </div>
